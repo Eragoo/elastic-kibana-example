@@ -1,0 +1,43 @@
+version: "2.4"
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    restart: always
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./../elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - bootstrap.memory_lock=true
+      - ELASTIC_PASSWORD=changeme
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+      - "ES_JAVA_OPTS=-Xms700m -Xmx700m"
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 2g
+    networks:
+      - monitoring
+
+  kibana:
+    container_name: kibana
+    restart: always
+    image: docker.elastic.co/kibana/kibana:7.14.1
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - 5601:5601
+    networks:
+      - monitoring
+    depends_on:
+      - elasticsearch
+
+networks:
+  monitoring:
+    driver: bridge
